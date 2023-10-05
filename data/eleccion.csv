@@ -1,0 +1,15 @@
+eleccion_id,descripcion,anio,recuento_tipo,padron_tipo,eleccion_tipo,path_origen
+1,PASO 2011 - Provisorios,2011,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2011-provisorios_paso/ResultadosElectorales.csv
+2,Generales 2011 - Provisorios,2011,PROVISORIO,NORMAL,GENERALES,dine-resultados-electorales/2011-provisorios_generales/ResultadosElectorales.csv
+3,PASO 2013 - Provisorios,2013,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2013-provisorios_paso/ResultadosElectorales.csv
+4,Generales 2013 - Provisorios,2013,PROVISORIO,NORMAL,GENERAL,dine-resultados-electorales/2013-provisorios_generales/ResultadosElectorales.csv
+6,Generales 2015 - Provisorios,2015,PROVISORIO,NORMAL,GENERALES,dine-resultados-electorales/2015-provisorios_generales/ResultadosElectorales.csv
+7,Balotaje 2015 - Provisorios,2015,PROVISORIO,NORMAL,BALLOTAGE,dine-resultados-electorales/2015-provisorios_ballotage/ResultadosElectorales.csv
+8,PASO 2017 - Provisorios,2017,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2017-provisorios_paso/ResultadosElectorales.csv
+9,Generales 2017 - Provisorios,2017,PROVISORIO,NORMAL,GENERALES,dine-resultados-electorales/2017-provisorios_generales/ResultadosElectorales.csv
+11,Generales 2019 - Provisorios,2019,PROVISORIO,NORMAL,GENERAL,dine-resultados-electorales/2019-provisorios_generales/ResultadosElectorales.csv
+12,PASO 2021 - Provisorios,2021,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2021-provisorios_paso/ResultadosElectorales.csv
+13,Generales 2021 - Provisorios,2021,PROVISORIO,NORMAL,GENERAL,dine-resultados-electorales/2021-provisorios_generales/ResultadosElectorales.csv
+14,PASO 2023 - Provisorios,2023,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2023-provisorios_paso/ResultadosElectorales.csv
+5,PASO 2015 - Provisorios,2015,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2015-provisorios_paso/ResultadosElectorales.csv
+10,PASO 2019 - Provisorios,2019,PROVISORIO,NORMAL,PASO,dine-resultados-electorales/2019-provisorios_paso/ResultadosElectorales.csv
