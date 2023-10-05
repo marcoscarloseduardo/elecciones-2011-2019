@@ -5,13 +5,6 @@ El script se divide en partes, dentro de un único documento, y a continuación 
 Se instalar y/o cargan las librerías necesarias para el análisis de los datos. Se genera una carpeta "plots" para guardar los gráficos más representativos
 y que se incluyen en este reporte.
 
-La estructura del directorio de trabajo es la siguiente:
-
-carpeta de trabajo -
-                    |_ data_
-                           |_out
-                    |_ plots
-
 El código que facilitó el análisis y generar las imágenes utilizadas en este reporte se encuentran disponibles en el repositorio de Github [https://github.com/marcoscarloseduardo/elecciones-2011-2019](https://github.com/marcoscarloseduardo/elecciones-2011-2019).
 
 Para la representación cartográfica se descargaron los circuitos electorales correspondientes a la provincia de Buenos Aires desde la sección [Mapa Electoral](https://mapa2.electoral.gov.ar/descargas/) de la Cámara Nacional Electoral.
