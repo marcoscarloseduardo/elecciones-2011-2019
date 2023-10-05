@@ -1,0 +1,406 @@
+---
+title: "Elecciones en Trenque Lauquen, Buenos Aires: Swing Electoral y Desafíos en la Protección de la Privacidad del Voto"
+author: "Esp. Ing. Carlos Marcos"
+format: pdf
+lang: es-AR
+css: styles.css
+
+header-includes:
+   - \usepackage{float}
+   - \floatplacement{figure}{!htb}
+   - \floatplacement{table}{!htb}
+   - \extrafloats{100}
+---
+
+<!--pagina de edición y licencia-->
+\begin{titlepage}
+\null\vfill
+ \begin{flushleft}
+       \textit{Portafolio en R}\\
+       © Carlos Marcos\\
+       Publicado 2023\\
+       ---\\
+       Contacto: \textit{$@\_Carlos\_Marcos$ }\\
+            \noindent Este documento se distribuye bajo licencia de Attribution-NonCommercial-ShareAlike 4.0 International\\
+            (CC BY-NC-SA 4.0)\\
+      ---\\
+      \includegraphics[width=0.3\linewidth]{data/CreativeCommons.png}
+ \end{flushleft}
+\end{titlepage}
+
+\pagebreak
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(
+    comment = "",
+    collapse = TRUE,
+    message = FALSE,
+    warning = FALSE,
+    echo = FALSE,
+    # cache = TRUE,
+    fig.show = "hold"
+)
+```
+
+# Introducción:
+
+En el contexto de la complejidad de los datos electorales publicados y la creciente demanda de análisis de información precisa, se originó un proyecto a partir de un enlace compartido en Twitter por [Mauro Infantino](https://twitter.com/plenque), que tiene como objetivo transformar los datos en insights significativos relacionados con las elecciones pasadas en Argentina, centrándose en una perspectiva del interior bonaerense.
+
+En este proyecto, exploraremos cómo los datos pueden convertirse en una poderosa herramienta para comprender la toma de decisiones políticas, los desafíos asociadas a la privacidad del voto y su relación con la manera en que se asignan los electores a las mesas electorales en ciudades del interior. En particular, nos enfocaremos en las ciudades con una población de alrededor de 50.000 habitantes, según el Censo de 2022.
+
+
+```{r}
+#| label: fig-seccion-electoral-circuitos
+#| fig-align: center
+#| fig-cap: Sección Electoral Trenque Lauquen y circuitos asociados
+#| out-width: 80%
+#| fig-pos: H
+    
+knitr::include_graphics('plots/circuitos_y_localidades.jpg')
+```
+
+Es fundamental destacar que al analizar un conjunto de datos, no solo es necesario contar con la habilidad para manejar las herramientas adecuadas, sino también poseer un conocimiento profundo sobre el tema en cuestión. Por esta razón, se restringió el análisis a la sección electoral donde resido, Trenque Lauquen, ubicada en el noroeste de la Provincia de Buenos Aires. Este distrito incluye una ciudad cabecera con el mismo nombre, que representa el 83% de la población, así como dos localidades, Treinta de Agosto (11%) y Bertuti (3%), además de pequeños parajes y colonias.
+
+En este proyecto, se utilizan librerías de **R** con fines demostrativos para la manipulación de datos, exploración, análisis y visualización. Además, se presenta una línea de análisis que podría extenderse en el futuro para abarcar otras elecciones o secciones electorales, dependiendo de los objetivos del investigador, poniendo a disposición el código fuente utilizado.
+
+# Desarrollo:
+
+Se plantea como objetivo analizar el comportamiento de las Mesas respecto del mantenimiento o cambio (swing) de la opción de voto para las instancia primaria y general de una elección.
+
+## Procesamiento de Datos Iniciales:
+
+A través del [repositorio](https://t.co/H1lZQOYQ9F) se descargó el archivo [elecciones.csv.7z](https://socialstats.la/archivos/argentina/elecciones/elecciones.csv.7z) que posee tablas que se relacionan entre sí de acuerdo al 
+siguiente esquema.
+
+A partir de los identificadores (id) de cada variable se realizó la vinculación entre las tablas de manera que los datos se presenten de una manera amigable para la lectura del público objetivo.
+
+```{r}
+#| label: fig-tablas-relaciones
+#| fig-align: center
+#| fig-cap: Relaciones entre las tablas de datos electorales
+#| out-width: 80%
+#| fig-pos: H
+
+knitr::include_graphics("data/elecciones-der.png")
+```
+
+Los datos disponibles permiten abordar las siguientes instancias electorales:
+
+```{r}
+#| label: fig-elecciones-disponibles
+#| fig-align: center
+#| fig-cap: Elecciones disponibles en los datos e identificador asociado
+#| out-width: 55%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_elecciones_disponibles.jpg")
+```
+
+Durante el proceso se detectó que ciertos nombres de agrupaciones difieren en la elección general respecto del utilizado en la primaria, por lo que manualmente se corrigieron para mantener la integridad del análisis. Ejemplos:  
+
+  - Elección 2011: alianza unión para el desarrollo social (paso) ~ alianza union para el desarrollo social - udeso (general)
+
+  - Eleccion 2015: alianza cambiemos (paso) ~ cambiemos (ballotage)
+
+
+## Selección de año y análisis inicial:
+
+Este análisis se enfoca en las elecciones de un año en particular, *2019*, pero tanto la metodología como el código del script es fácilmente adaptable para poder aplicarlo al resto de los años.
+
+La elección del mismo se basa en tres motivos:
+  - ese año no hubo ballotage, por lo que el análisis se simplifica al evaluar solo 2 instancias;
+  - se celebraron elecciones presidenciales, las cuales suelen tener una mayor participación e involucramiento de la sociedad;
+  - cronológicamente se encuentra más cercanas que el resto de las elecciones presidenciales por lo que es más fácil recordar detalles sobre agrupaciones políticas.
+
+### Mesas sin datos cargados en alguna de las instancias
+
+Como se desea analizar el nivel de *swing* por mesa es necesario que las observaciones de cada mesa contenga esta información. Por este motivo se excluyeron las mesas que no poseían datos en al menos una de las 2 instancias.
+
+```{r}
+#| label: fig-mesas-sin-datos-instancia
+#| fig-align: center
+#| fig-cap: Mesas excluidas por carecer de datos en la instancia primaria o general
+#| out-width: 33%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_mesas_sin_votos.jpg")
+
+```
+
+### Mesas con bajo caudal de votos
+
+A partir de los votos emitidos en la elección primaria y la general se calcula la diferencia entre ambos, de manera de identificar mesas con valores extremos respecto de la mediana de la sección.
+
+Una gran diferencia indica que muchos electores optaron por no votar en una de las instancias a pesar de haberlo hecho en la otra. Hasta ahora siempre se observa mayor participación en la elección general respecto de la primaria.
+
+Si se desea analizar el swing, el motivo trivial es que los electores que votaron en la general y que no habían votado en al primaria son los causantes del mismo, por lo que el mayor interés se concentra en mesas con alto swing y baja diferencia de votantes entre ambas instancias
+
+```{r}
+#| label: fig-rango-votos
+#| fig-align: center
+#| fig-cap: Distribución de rango de votos emitidos entre primaria y general por mesa
+#| out-width: 75%
+#| fig-pos: H
+
+knitr::include_graphics("plots/dif_votos_primaria_general.jpg")
+
+```
+
+Existen mesas donde debido a la densidad poblacional, el número de votos está muy por debajo del número promedio, por lo que, si tuvieran un alto nivel de swing el mismo no sería significativo en el cómputo total. Por este motivo, se las excluye del análisis, de manera que el foco pueda estar en aquellas mesas que realmente podrían modificar el resultado alcanzado en las primarias.
+
+Las mesas cuyo caudal de votos estuvo un 20% por debajo de la mediana de la sesión fueron excluidas del análisis:
+
+```{r}
+#| label: fig-mesas-pocos-votos
+#| fig-align: center
+#| fig-cap: Mesas excluidas por número reducido de votantes en comparación con el promedio de la sesión electoral
+#| out-width: 33%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_mesas_pocos_votantes.jpg")
+
+```
+
+
+### Mesas sin votos de agrupaciones mayoritarias
+
+Por último también se excluyeron mesas en las que las agrupaciones mayoritarias no tenían votos en alguna de las instancias, asumiendo un error de carga.
+
+```{r}
+#| label: fig-mesas-sin-votos-agrupaciones-mayoritarias
+#| fig-align: center
+#| fig-cap: Ejemplo de mesa excluida por carecer de votos agrupación mayoritaria
+#| out-width: 70%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_mesa_excluida_agrupacion_sin_carga.jpg")
+
+```
+
+# Resultados:
+
+## Comparación a nivel de la sección electoral
+
+```{r}
+#| label: fig-eleccion-2011-presidente
+#| fig-align: center
+#| fig-cap: Sección Trenque Lauquen - Elecciones 2011 a presidente/a
+#| out-width: 90%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_elecciones_2011-presidente-a.jpg")
+
+```
+
+```{r}
+#| label: fig-eleccion-2015-presidente
+#| fig-align: center
+#| fig-cap: Sección Trenque Lauquen - Elecciones 2015 a presidente/a
+#| out-width: 90%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_elecciones_2015-presidente-a.jpg")
+
+```
+
+```{r}
+#| label: fig-eleccion-2019-presidente
+#| fig-align: center
+#| fig-cap: Sección Trenque Lauquen - Elecciones 2019 a presidente/a
+#| out-width: 90%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_elecciones_2019-presidente-a.jpg")
+
+```
+
+## Swing Electoral y Participación:
+
+El indicador *Diferencia de votantes* refleja la variación de votantes entre las instancias primaria y general.
+
+El *Porcentaje de votos* se calcula para cada agrupación, de manera de obtener valores que permitan comparar el nivel de adhesión recibido, independientemente de la cantidad de votantes en cada instancia.
+
+
+El indicador de *Swing* de una Mesa se obtiene sumando, en valor absoluto, la diferencia entre los *porcentajes de votos* de todas las agrupaciones que compitieron en la instancia general. El valor obtenido se divide por 2, ya que al calcularlo en valor absoluto, el efecto de pérdida y de ganancia reflejan el efecto duplicado.
+
+
+```{r}
+#| label: fig-swing-normal
+#| fig-align: center
+#| fig-cap: Histograma de la distribución de Swing en las mesas de la sección
+#| out-width: 90%
+#| fig-pos: H
+
+knitr::include_graphics("plots/hist_swing_y_normal.jpg")
+
+```
+
+El efecto de *Swing* se puede producir tanto por los nuevos votantes que se suman en la elección general (no participaron en la instancia primaria) como por aquellos votantes que optaron por cambiar su voto para la elección general.
+
+En este documento nos enfocamos en el cambio de voto atribuido a los votantes que participaron en la instancia primaria. Como consecuencia, nos interesa profundizar en aquellas mesas que poseen una baja *diferencia de votantes* y un alto *swing*.
+
+```{r}
+#| label: fig-swing-diferencia-votantes
+#| fig-align: center
+#| fig-cap: Comparativa de Swing y Diferencia de votantes por Mesa.
+#| out-width: 100%
+#| fig-pos: H
+
+knitr::include_graphics("plots/swing_y_dif_votantes.jpg")
+
+```
+
+Se adoptó como como criterio filtrar las mesas que poseen un swing por encima de la mediana y una diferencia de votantes inferior también a su mediana.
+
+Un resumen de las mesas que cumplen con este criterio se observa en la siguiente tabla, ordenadas de mayor a menos swing:
+
+```{r}
+#| label: fig-alto-swing-baja-diferencia-votantes
+#| fig-align: center
+#| fig-cap: Mesas con alto swing y baja diferencia de votantes.
+#| out-width: 30%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_mesas_alto_swing_baja_diferencia_votantes.jpg")
+
+```
+
+El detalle para algunas de estas mesas se visualiza en las siguientes imágenes:
+
+En este caso, se supone que los votos en blanco de la primaria se trasladron a la agrupación que había salido primera.
+
+```{r}
+#| label: fig-swing-mesa-89
+#| fig-align: center
+#| fig-cap: Mesas 89
+#| out-width: 100%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_swing_mesa_89_swing_16.5_difvotantes_7.5.jpg")
+
+```
+
+En la mesa 52, la agrupación que salió primera, cedió parte de sus votos mientras que la segunda los pudo atraer.
+
+```{r}
+#| label: fig-swing-mesa-52
+#| fig-align: center
+#| fig-cap: Mesa 52
+#| out-width: 100%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_swing_mesa_52_swing_8.8_difvotantes_2.6.jpg")
+
+```
+
+La mesa 14 nuevamente muestra como la segunda fuerza gana votos a expensas de la primera. Recordar que se muestran votos a nivel agrupación, no listas internas.
+
+```{r}
+#| label: fig-swing-mesa-14
+#| fig-align: center
+#| fig-cap: Mesa 14
+#| out-width: 100%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_swing_mesa_14_swing_12.8_difvotantes_8.8.jpg")
+
+```
+
+## Grado de exposición por apellido (familias)
+
+De acuerdo al Código Electoral Nacional,las divisiones territoriales y agrupación de electores se realiza de la siguiente manera:
+
+A los fines electorales la Nación se divide en:
+
+  - **Distritos**: La Ciudad Autónoma de Buenos Aires y cada provincia, constituyen un distrito electoral.
+  
+  - **Secciones**: Son subdivisiones de los distritos. Cada uno de los partidos, departamentos de las provincias, constituyen una sección electoral. Igualmente cada comuna en que se divide la Ciudad Autónoma de Buenos Aires, es una sección. Las secciones llevan el nombre del partido o departamento de la provincia, o la denominación de la comuna correspondiente de la Ciudad Autónoma de Buenos Aires.
+  
+  - **Circuitos**: son subdivisiones de las secciones. Agrupan a los electores en razón de la proximidad de los domicilios, bastando una mesa electoral para constituir un circuito. En la formación de los circuitos se tiene particularmente en cuenta los caminos, ríos, arroyos y vías de comunicación entre poblaciones tratando de abreviar las distancias entre el domicilio de los electores, y los lugares donde funcionarán las mesas receptoras de votos.  Los circuitos son numerados correlativamente dentro del distrito.
+
+  - **Mesas electorales**: cada circuito se divide en mesas, las que se constituyen con hasta trescientos cincuenta (350) electores inscritos, agrupados por *orden alfabético*. Si realizado tal agrupamiento de electores queda una fracción inferior a sesenta (60), se incorpora a la mesa que el juez determine. Si restare una fracción de sesenta (60) o más, se forma con la misma una mesa electoral. Los jueces electorales pueden constituir mesas electorales, en aquellos circuitos cuyos núcleos de población estén separados por largas distancias o accidentes geográficos que dificulten la concurrencia de los electores al comicio, agrupando a los electores considerando la proximidad de sus domicilios y por orden alfabético. 
+  
+En el contexto de nuestro estudio, el distrito en cuestión es la Provincia de Buenos Aires, la sección corresponde al partido de Trenque Lauquen, y los circuitos se definen de acuerdo a la representación presentada en la Figura 1. Las mesas de las tres localidades principales están ordenadas alfabéticamente y están vinculadas a un solo circuito por cada localidad.
+
+Esta configuración impide que los apellidos de una localidad se dispersen o se mezclen entre diferentes circuitos, lo que resulta en un mayor grado de exposición que en localidades más pobladas, que suelen tener más de un circuito asociado. Esta situación se da particularmente en localidades de tamaño mediano, ya que en las pequeñas, muchos apellidos están asociados a una única mesa.
+
+En ciudades medianas, como es el caso de Trenque Lauquen, existe un solo circuito con un total de 95 mesas. Como resultado, en promedio, los apellidos que comienzan con la misma letra se distribuyen de manera ordenada en tres mesas. Dado que algunas familias son más numerosas que otras, la frecuencia de aparición en el registro electoral de cada mesa es desigual.
+
+Hasta este punto, esta información es meramente anecdótica. Sin embargo, desde la implementación de la instancia primaria obligatoria, la voluntad del electorado se manifiesta en dos ocasiones en cada elección, lo que brinda la oportunidad de comparar el cambio de votos y establecer una relación entre este fenómeno y un grupo específico de apellidos en cada mesa.
+
+A continuación, presentamos una visualización de la frecuencia de apellidos dentro de las mesas previamente identificadas. Utilizamos como fuente la guía telefónica de la Cooperativa Eléctrica de la sección, la cual proporciona una línea telefónica fija gratuita junto con el servicio de internet, minimizando así cualquier sesgo económico en la lista de apellidos. Al comparar esta lista con la generada a partir del registro necrológico desde 1982 hasta la fecha, no se observan diferencias significativas en cuanto a los apellidos más frecuentes.
+
+En ciudades medianas como la que nos ocupa, a excepción de casos como González, García, Fernández, entre otros, es común que los apellidos estén vinculados por lazos familiares, lo que favorece la tendencia de que estos grupos voten de manera similar.
+
+En la Mesa 89 3 apellidos constituyen el 30% del padrón.
+
+```{r}
+#| label: fig-apellidos-mesa-89
+#| fig-align: center
+#| fig-cap: Frecuencia de apellidos en la Mesa 89
+#| out-width: 50%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_apellidos_mesa_89.jpg")
+
+```
+
+Para la Mesa 52 cuatro apellidos conforman más de la mitad del padrón.
+
+```{r}
+#| label: fig-apellidos-mesa-52
+#| fig-align: center
+#| fig-cap: Frecuencia de apellidos en la Mesa 52
+#| out-width: 50%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_apellidos_mesa_52.jpg")
+
+```
+
+En la Mesa 14 se observa que 6 apellidos constituyen el 50% del padrón. A partir de allí luego viene un largo listado de apellidos con muy baja frecuencia, la mayoría con una sola aparición.
+
+```{r}
+#| label: fig-apellidos-mesa-14
+#| fig-align: center
+#| fig-cap: Frecuencia de apellidos en la Mesa 14
+#| out-width: 50%
+#| fig-pos: H
+
+knitr::include_graphics("plots/tb_apellidos_mesa_14.jpg")
+
+```
+
+
+# Conclusiones:
+
+En las tres elecciones presidenciales analizadas (2011, 2015 y 2019), se mantiene constante el orden de las agrupaciones a nivel de sección en las instancias primarias y generales.
+
+La consistencia es aún más notoria al observar que el candidato que obtuvo el primer lugar en las primarias siempre experimentó un aumento significativo en la elección general, con un incremento adicional que varía entre el 12% y el 27%. No obstante, es crucial tener en cuenta las diferencias al analizar a nivel de mesa electoral.
+
+En un patrón coherente, la cantidad de votos en blanco y nulos tiende a disminuir al pasar de la instancia primaria a la general.
+
+En dos de las tres elecciones presidenciales, el candidato que se ubicó en el segundo lugar en las primarias sufrió una reducción de votos en la elección general, lo que podría deberse a un menor apoyo de ciertas listas internas en esta última instancia.
+
+La utilización de datos provisionales del Repositorio de la Dirección Nacional Electoral (DINE) presenta desafíos, ya que en ocasiones falta información sobre algunas agrupaciones o incluso mesas enteras, lo que complica las comparaciones entre las instancias electorales.
+
+La apertura de datos se muestra como una herramienta poderosa para analizar minuciosamente los votos a nivel de cada mesa electoral, brindando información valiosa que puede guiar a las agrupaciones políticas en la implementación de mejoras estratégicas.
+
+La inclusión de la instancia primaria en el proceso electoral permite realizar comparaciones que arrojan luz sobre la evolución del voto a nivel de mesa, revelando cambios geográficos y alfabéticos en las preferencias electorales.
+
+Finalmente, es crucial destacar que en localidades donde el número de mesas electorales aumenta sin la creación de nuevos circuitos, pueden surgir situaciones que amenacen la privacidad del voto y fomenten prácticas inadecuadas, como el ofrecimiento de dádivas u otros incentivos a familias que tienen un poder significativo para influir en los resultados de una mesa. Este tipo de riesgo a la privacidad no se evidencia necesariamente en la victoria de un candidato en esa mesa, sino más bien con la posibilidad de perder apoyo en esa instancia electoral.
+
+
+# Cierre:
+
+La desagregación de datos a nivel de mesa electoral proporciona una visión profundamente detallada y transparente de los resultados de las elecciones, lo cual desempeña un papel esencial en la consolidación de la confianza de la ciudadanía en el proceso electoral.
+
+Este enfoque permite identificar tendencias de voto y cambios en el comportamiento electoral a nivel local, lo que se revela de gran valor tanto para los partidos políticos como para los analistas políticos.
+
+Un análisis aún más perspicaz surge al observar el cambio de votación entre dos instancias electivas, como las elecciones primarias y las elecciones generales, segmentado por grupos de apellidos, lo que puede arrojar luz sobre patrones de voto en familias y comunidades.
+
+Sin embargo, es importante destacar que esta exposición se puede minimizar mediante la creación de múltiples circuitos en áreas con un elevado número de mesas electorales en relación con la cantidad de apellidos que las componen.
+
+A medida que conmemoramos los 40 años de retorno a la democracia, resulta esencial examinar posibles riesgos que puedan amenazar la plenitud de esta experiencia democrática.
+
+La apertura de datos por parte del Estado marca un hito significativo. Este breve análisis aspira a servir como un ejemplo inicial en la búsqueda de ideas valiosas. No obstante, es imperativo subrayar que estas conclusiones deben ser sometidas a una verificación exhaustiva, y, en caso necesario, se deben tomar medidas concretas para corregir cualquier desviación detectada.
